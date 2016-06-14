@@ -12,8 +12,8 @@ public class MyProducer {
     public static void main(String[] args) {
         Properties props = initConf();
         Producer<String, String> producer = new KafkaProducer<String, String>(props);
-        for(int i = 0; i < 10; i++)
-            producer.send(new ProducerRecord<String, String>("test", Integer.toString(i) + "a", Integer.toString(i) + " l"),
+        for(int i = 0; i < 500; i++)
+            producer.send(new ProducerRecord<String, String>("test", Integer.toString(i), Integer.toString(i)),
                     new Callback() {
                         @Override
                         public void onCompletion(RecordMetadata metadata, Exception exception) {

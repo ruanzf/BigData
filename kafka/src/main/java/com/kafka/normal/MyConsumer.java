@@ -2,6 +2,7 @@ package com.kafka.normal;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.RetryNTimes;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
 
@@ -12,30 +13,39 @@ import java.util.*;
  */
 public class MyConsumer {
 
-    public static final String zkPath = "/consumers/%s/offsets/%s/%s/";
+    public static final String zkPath = "/consumers/ruanzf-test/offsets/test/0";
     public static final CuratorFramework client;
 
     static {
-        client = CuratorFrameworkFactory.builder().build();
+        client = CuratorFrameworkFactory.newClient("192.168.1.118:2181", new RetryNTimes(3, 1000));
+        client.start();
     }
 
     public static void main(String[] args) throws InterruptedException {
         subscribe();
+        seek();
     }
 
     private static void seek() throws InterruptedException {
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(initConf());
         consumer.assign(Arrays.asList(new TopicPartition("test", 0)));
-        consumer.seek(new TopicPartition("test", 0), 80);
-        ConsumerRecords<String, String> records = consumer.poll(1000);
-        for (ConsumerRecord<String, String> record : records)
-            System.out.printf("offset = %d, key = %s, value = %s\n", record.offset(), record.key(), record.value());
 
-        //生效
-//        consumer.commitSync();
+        while (true) {
+            long offset = getOffsetToZk();
+            consumer.seek(new TopicPartition("test", 0), offset);
+            ConsumerRecords<String, String> records = consumer.poll(1000);
 
-        //但是不生效  不知道为什么
-        commitAsync(consumer);
+            if (records.count() <= 0)
+                break;
+
+            for (ConsumerRecord<String, String> record : records) {
+                System.out.printf("offset = %d, key = %s, value = %s\n", record.offset(), record.key(), record.value());
+                offset = record.offset();
+            }
+
+            setOffsetToZk(offset);
+            consumer.commitSync();
+        }
 
     }
 
@@ -55,9 +65,27 @@ public class MyConsumer {
         });
     }
 
-    private static void keepOffsetToZk(String clientName, String topic, String partition) {
-        String path = String.format(zkPath, clientName, topic, partition);
+    private static long getOffsetToZk() {
+        try {
+            if(null == client.checkExists().forPath(zkPath)) {
+                client.create().creatingParentsIfNeeded().forPath(zkPath, "0".getBytes());
+            }
+            long offset = Long.valueOf(new String(client.getData().forPath(zkPath))) + 1;
+            System.out.println("get offset: " + offset);
+            return offset;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
 
+    private static void setOffsetToZk(long offset) {
+        try {
+            System.out.println("set offset: " + offset);
+            client.setData().forPath(zkPath, Long.toString(offset).getBytes());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private static void subscribe() throws InterruptedException {
@@ -71,7 +99,6 @@ public class MyConsumer {
             Thread.sleep(1000);
 
             if(records.count() > 0) {
-                //生效
                 commitAsync(consumer);
             }
         }
@@ -80,7 +107,7 @@ public class MyConsumer {
     }
 
     /**
-     * http://kafka.apache.org/documentation.html#producerconfigs
+     * http://kafka.apache.org/090/documentation.html#newconsumerconfigs
      * @return
      */
     private static Properties initConf() {
@@ -90,6 +117,13 @@ public class MyConsumer {
         props.put("client.id", "ruanzf-test");
         props.put("enable.auto.commit", "false");
         props.put("auto.commit.interval.ms", "1000");
+
+        /**
+         * 用这个配置来控制一次取出的数据量
+         * seek() 遍可以不断的更新zk中的offset取出数据
+         */
+        props.put("max.partition.fetch.bytes", "1024");
+
         props.put("session.timeout.ms", "30000");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
