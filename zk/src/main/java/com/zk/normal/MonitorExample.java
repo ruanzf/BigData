@@ -48,8 +48,6 @@ public class MonitorExample {
         client = CuratorFrameworkFactory.newClient("192.168.1.118:2181", new RetryNTimes(3, 1000));
         client.start();
         client.setACL().withACL(acls);
-
-
     }
 
     public static void main(String[] args) throws Exception {

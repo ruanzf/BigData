@@ -55,7 +55,7 @@ public class MyConsumer {
             public void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception exception) {
                 if (null != exception) {
                     exception.printStackTrace();
-                }else {
+                } else {
                     offsets.forEach((topicPartition, offsetAndMetadata) -> {
                         System.out.println(String.format("this is call back, topic %s, partition %s offset %s",
                                 topicPartition.topic(), topicPartition.partition(), offsetAndMetadata.offset()));
@@ -67,7 +67,7 @@ public class MyConsumer {
 
     private static long getOffsetToZk() {
         try {
-            if(null == client.checkExists().forPath(zkPath)) {
+            if (null == client.checkExists().forPath(zkPath)) {
                 client.create().creatingParentsIfNeeded().forPath(zkPath, "0".getBytes());
             }
             return Long.valueOf(new String(client.getData().forPath(zkPath))) + 1;
@@ -93,7 +93,7 @@ public class MyConsumer {
             for (ConsumerRecord<String, String> record : records)
                 System.out.printf("offset = %d, key = %s, value = %s", record.offset(), record.key(), record.value());
 
-            if(records.count() > 0)
+            if (records.count() > 0)
                 commitAsync(consumer);
 
             Thread.sleep(1000);
@@ -104,6 +104,7 @@ public class MyConsumer {
 
     /**
      * http://kafka.apache.org/090/documentation.html#newconsumerconfigs
+     *
      * @return
      */
     private static Properties initConf() {

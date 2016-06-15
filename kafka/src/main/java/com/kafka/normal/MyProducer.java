@@ -12,13 +12,13 @@ public class MyProducer {
     public static void main(String[] args) {
         Properties props = initConf();
         Producer<String, String> producer = new KafkaProducer<String, String>(props);
-        for(int i = 0; i < 500; i++)
+        for (int i = 0; i < 500; i++)
             producer.send(new ProducerRecord<String, String>("test", Integer.toString(i), Integer.toString(i)),
                     new Callback() {
                         @Override
                         public void onCompletion(RecordMetadata metadata, Exception exception) {
                             System.out.println("this is call back");
-                            if(exception != null)
+                            if (exception != null)
                                 exception.printStackTrace();
 
                             System.out.printf("topic: %s partition: %s, offset %s \n", metadata.topic(), metadata.partition(), metadata.offset());
@@ -29,6 +29,7 @@ public class MyProducer {
 
     /**
      * http://kafka.apache.org/documentation.html#producerconfigs
+     *
      * @return
      */
     private static Properties initConf() {
