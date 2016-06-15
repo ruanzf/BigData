@@ -18,24 +18,19 @@ public class FileRead {
         RandomAccessFile aFile = null;
         try{
             aFile = new RandomAccessFile("C:\\Users\\ruan\\Desktop\\nio.txt","rw");
-            FileChannel fileChannel = aFile.getChannel();
-            ByteBuffer buf = ByteBuffer.allocate(1024);
-
-            int bytesRead = fileChannel.read(buf);
-            System.out.println(bytesRead);
-
+            FileChannel fileChannel = aFile.getChannel();   //创建通道
+            ByteBuffer buf = ByteBuffer.allocate(1024);     //创建缓冲区
+            int bytesRead = fileChannel.read(buf);          //将数据从通道读到缓冲区
             while(bytesRead != -1)
             {
-                buf.flip();
-                while(buf.hasRemaining())
-                {
+                buf.flip();                                 //缓冲区设为读取模式 limit = position; position = 0;
+                while(buf.hasRemaining()) {                 //还有东西读取 position < limit
                     System.out.print((char)buf.get());
                 }
-
-                buf.compact();
+                buf.compact();                              //为写入数据清场子，把还没读完的数据挪到数组的开头，下回还可以读取到
+                                                            //clear 是把数据全清除了
                 bytesRead = fileChannel.read(buf);
             }
-            System.out.print("");
         }catch (IOException e){
             e.printStackTrace();
         }finally{

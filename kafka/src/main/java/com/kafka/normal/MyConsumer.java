@@ -70,9 +70,7 @@ public class MyConsumer {
             if(null == client.checkExists().forPath(zkPath)) {
                 client.create().creatingParentsIfNeeded().forPath(zkPath, "0".getBytes());
             }
-            long offset = Long.valueOf(new String(client.getData().forPath(zkPath))) + 1;
-            System.out.println("get offset: " + offset);
-            return offset;
+            return Long.valueOf(new String(client.getData().forPath(zkPath))) + 1;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -81,7 +79,6 @@ public class MyConsumer {
 
     private static void setOffsetToZk(long offset) {
         try {
-            System.out.println("set offset: " + offset);
             client.setData().forPath(zkPath, Long.toString(offset).getBytes());
         } catch (Exception e) {
             e.printStackTrace();
@@ -96,11 +93,10 @@ public class MyConsumer {
             for (ConsumerRecord<String, String> record : records)
                 System.out.printf("offset = %d, key = %s, value = %s", record.offset(), record.key(), record.value());
 
-            Thread.sleep(1000);
-
-            if(records.count() > 0) {
+            if(records.count() > 0)
                 commitAsync(consumer);
-            }
+
+            Thread.sleep(1000);
         }
 
 
